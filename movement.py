@@ -1,10 +1,14 @@
 
 class LinearMovement:
-    def move(self, obj, dt: float = 1.0):
-        if not hasattr(obj, "position"):
+    def __init__(self, obj, dt: float = 1.0):
+        self.obj = obj
+        self.dt = dt
+    
+    def move(self):
+        if not hasattr(self.obj, "position"):
             raise AttributeError("Нет доступа к position")
 
-        if not hasattr(obj, "velocity"):
+        if not hasattr(self.obj, "velocity"):
             raise AttributeError("Нет доступа к velocity")
 
-        obj.position = obj.position + obj.velocity * dt
+        self.obj.position = self.obj.position + self.obj.velocity * self.dt

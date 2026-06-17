@@ -9,7 +9,7 @@ def test_no_position():
             return Vector(1, 1)
 
     with pytest.raises(AttributeError):
-        LinearMovement().move(Bad(), 1)
+        LinearMovement(Bad(), 1).move()
 
 
 def test_no_velocity():
@@ -23,4 +23,4 @@ def test_no_velocity():
             pass
 
     with pytest.raises(AttributeError):
-        LinearMovement().move(Bad(), 1)
+        LinearMovement(Bad(), 1).move()
