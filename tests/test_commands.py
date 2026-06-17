@@ -1,4 +1,4 @@
-from tests.failig_object import FailingObject
+from failing_object import FailingObject
 
 from commands.move_command import MoveCommand
 from commands.retry_once_command import RetryOnceCommand
