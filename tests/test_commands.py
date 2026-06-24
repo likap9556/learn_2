@@ -30,7 +30,7 @@ def test_double_retry_then_log_scenario(capsys):
     
     # вывод LogCommand через capsys (перехватчик stdout)
     captured = capsys.readouterr()
-    assert "ERROR: MoveCommand: ошибка" in captured.out
+    assert "ERROR: BrokenMoveCommand: ошибка" in captured.out
     assert queue.empty() is True
 
 
@@ -48,7 +48,7 @@ def test_single_retry_then_log_scenario(capsys):
     processor.process()
     
     captured = capsys.readouterr()
-    assert "ERROR: MoveCommand: ошибка" in captured.out
+    assert "ERROR: BrokenMoveCommand: ошибка" in captured.out
 
 
 # 3. проверка работы конкретных обработчиков
