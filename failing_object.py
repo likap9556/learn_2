@@ -1,18 +1,12 @@
-from geometry import Vector
+from commands.move_command import MoveCommand
 
-class FailingObject:
-    def __init__(self):
+class FailingMoveCommand(MoveCommand):
+
+    def __init__(self, obj):
+        super().__init__(obj)
         self.calls = 0
 
-    @property
-    def position(self):
+    def execute(self):
         self.calls += 1
-        raise AttributeError("fail")
-
-    @position.setter
-    def position(self, value):
-        pass
-
-    @property
-    def velocity(self):
-        return Vector(1, 1)
+        print(f"execute attempt {self.calls}")
+        raise RuntimeError("boom")

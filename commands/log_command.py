@@ -7,6 +7,4 @@ class LogCommand(Command):
         self.exc = exc
 
     def execute(self):
-        print(
-            f"ERROR: {type(self.cmd).__name__}: {self.exc}"
-        )
+        print(f"ERROR: {type(self.cmd).__name__}: {self.exc}")

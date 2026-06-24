@@ -1,7 +1,8 @@
-from commands.log_command import LogCommand
 from handlers.exception_handler import ExceptionHandler
+from commands.log_command import LogCommand
 
 
 class RetryTwiceFailedHandler(ExceptionHandler):
-    def handle(self, cmd, exc, queue):
-        queue.push(LogCommand(cmd, exc))
+
+    def handle(self, cmd, exc):
+        return LogCommand(cmd.cmd, exc)

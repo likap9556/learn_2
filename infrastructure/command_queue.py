@@ -2,14 +2,15 @@ from collections import deque
 
 
 class CommandQueue:
+
     def __init__(self):
-        self.queue = deque()
+        self._queue = deque()
 
     def push(self, cmd):
-        self.queue.append(cmd)
+        self._queue.append(cmd)
 
     def pop(self):
-        return self.queue.popleft()
+        return self._queue.popleft()
 
     def empty(self):
-        return len(self.queue) == 0
+        return len(self._queue) == 0
