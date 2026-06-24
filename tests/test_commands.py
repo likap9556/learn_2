@@ -9,17 +9,20 @@ from commands.retry_commands import RetryOnceCommand, RetryTwiceCommand
 from commands.move_command import MoveCommand
 from handlers.concrete_handlers import RetryOnceHandler, RetryOnceFailedHandler, RetryTwiceFailedHandler
 
+class BrokenMoveCommand(MoveCommand):
+    def execute(self):
+        raise ValueError("ошибка")
 
 # повтор 2 раза - запись в лог
 def test_double_retry_then_log_scenario(capsys):
     queue = CommandQueue()
     registry = ExceptionHandlerRegistry()
     
-    registry.register(MoveCommand, ValueError, RetryOnceHandler())
+    registry.register(BrokenMoveCommand, ValueError, RetryOnceHandler())
     registry.register(RetryOnceCommand, ValueError, RetryOnceFailedHandler())
     registry.register(RetryTwiceCommand, ValueError, RetryTwiceFailedHandler())
     
-    bad_move = MoveCommand(obj="ship")
+    bad_move = BrokenMoveCommand(obj="ship")
     queue.push(bad_move)
     
     processor = CommandProcessor(queue, registry)
@@ -36,10 +39,10 @@ def test_single_retry_then_log_scenario(capsys):
     registry = ExceptionHandlerRegistry()
     
     # первый сбой - повтор, второй сбой - в лог
-    registry.register(MoveCommand, ValueError, RetryOnceHandler())
+    registry.register(BrokenMoveCommand, ValueError, RetryOnceHandler())
     registry.register(RetryOnceCommand, ValueError, RetryTwiceFailedHandler()) 
     
-    queue.push(MoveCommand(obj="ship"))
+    queue.push(BrokenMoveCommand(obj="ship"))
     
     processor = CommandProcessor(queue, registry)
     processor.process()
@@ -79,7 +82,7 @@ def test_no_handler_registered_leaves_queue_empty():
     queue = CommandQueue()
     registry = ExceptionHandlerRegistry() 
     
-    queue.push(MoveCommand(obj="ship"))
+    queue.push(BrokenMoveCommand(obj="ship"))
     
     processor = CommandProcessor(queue, registry)
     processor.process() 
