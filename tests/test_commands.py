@@ -1,91 +1,87 @@
 import pytest
+from unittest.mock import Mock
 
-from commands.retry_once_command import RetryOnceCommand
-from commands.retry_twice_command import RetryTwiceCommand
-from failing_object import FailingMoveCommand
-
+from command import Command
 from infrastructure.command_queue import CommandQueue
-from infrastructure.command_processor import CommandProcessor
 from infrastructure.exception_handler_registry import ExceptionHandlerRegistry
-
-from handlers.retry_once_handler import RetryOnceHandler
-from handlers.retry_once_failed_handler import RetryOnceFailedHandler
-from handlers.retry_twice_failed_handler import RetryTwiceFailedHandler
-
+from infrastructure.command_processor import CommandProcessor
+from commands.retry_commands import RetryOnceCommand, RetryTwiceCommand
 from commands.move_command import MoveCommand
+from handlers.concrete_handlers import RetryOnceHandler, RetryOnceFailedHandler, RetryTwiceFailedHandler
 
 
-
-def test_execution_order():
-
+# повтор 2 раза - запись в лог
+def test_double_retry_then_log_scenario(capsys):
     queue = CommandQueue()
     registry = ExceptionHandlerRegistry()
-
-    registry.register(MoveCommand, RuntimeError, RetryOnceHandler())
-    registry.register(MoveCommand, RuntimeError, RetryOnceHandler())
-    registry.register(RetryOnceCommand, RuntimeError, RetryOnceFailedHandler())
-    registry.register(RetryTwiceCommand, RuntimeError, RetryTwiceFailedHandler())
-
-    cmd = FailingMoveCommand("obj")
-    queue.push(cmd)
-
+    
+    registry.register(MoveCommand, ValueError, RetryOnceHandler())
+    registry.register(RetryOnceCommand, ValueError, RetryOnceFailedHandler())
+    registry.register(RetryTwiceCommand, ValueError, RetryTwiceFailedHandler())
+    
+    bad_move = MoveCommand(obj="ship")
+    queue.push(bad_move)
+    
     processor = CommandProcessor(queue, registry)
     processor.process()
+    
+    # вывод LogCommand через capsys (перехватчик stdout)
+    captured = capsys.readouterr()
+    assert "ERROR: MoveCommand: ошибка" in captured.out
+    assert queue.empty() is True
 
-    assert cmd.calls == 3
-    assert queue.empty()
 
-
-def test_log_output(capsys):
-
+def test_single_retry_then_log_scenario(capsys):
     queue = CommandQueue()
     registry = ExceptionHandlerRegistry()
-
-    registry.register(MoveCommand, RuntimeError, RetryOnceHandler())
-    registry.register(RetryOnceCommand, RuntimeError, RetryOnceFailedHandler())
-    registry.register(RetryTwiceCommand, RuntimeError, RetryTwiceFailedHandler())
-
-    queue.push(FailingMoveCommand("obj"))
-
+    
+    # первый сбой - повтор, второй сбой - в лог
+    registry.register(MoveCommand, ValueError, RetryOnceHandler())
+    registry.register(RetryOnceCommand, ValueError, RetryTwiceFailedHandler()) 
+    
+    queue.push(MoveCommand(obj="ship"))
+    
     processor = CommandProcessor(queue, registry)
     processor.process()
-
-    captured = capsys.readouterr().out
-
-    assert "ERROR" in captured
-    assert "FailingMoveCommand" in captured
+    
+    captured = capsys.readouterr()
+    assert "ERROR: MoveCommand: ошибка" in captured.out
 
 
-def test_retry_depth():
+# 3. проверка работы конкретных обработчиков
+def test_retry_once_handler_returns_retry_command():
+    handler = RetryOnceHandler()
+    mock_cmd = Mock(spec=Command)
+    exc = ValueError("test")
+    
+    result = handler.handle(mock_cmd, exc)
+    
+    assert isinstance(result, RetryOnceCommand)
+    assert result.cmd == mock_cmd
 
+
+def test_retry_once_failed_handler_extracts_original_command():
+    handler = RetryOnceFailedHandler()
+    
+    # неработающая команда
+    original_cmd = Mock(spec=Command)
+    failed_retry_cmd = RetryOnceCommand(original_cmd)
+    exc = ValueError("test")
+    
+    result = handler.handle(failed_retry_cmd, exc)
+    
+    assert isinstance(result, RetryTwiceCommand)
+    assert result.cmd == original_cmd
+
+
+# нет обработчика в реестре
+def test_no_handler_registered_leaves_queue_empty():
     queue = CommandQueue()
-    registry = ExceptionHandlerRegistry()
-
-    registry.register(MoveCommand, RuntimeError, RetryOnceHandler())
-    registry.register(RetryOnceCommand, RuntimeError, RetryOnceFailedHandler())
-    registry.register(RetryTwiceCommand, RuntimeError, RetryTwiceFailedHandler())
-
-    queue.push(FailingMoveCommand("obj"))
-
+    registry = ExceptionHandlerRegistry() 
+    
+    queue.push(MoveCommand(obj="ship"))
+    
     processor = CommandProcessor(queue, registry)
-    processor.process()
-
-    assert queue.empty()
-
-
-def test_no_infinite_loop():
-
-    queue = CommandQueue()
-    registry = ExceptionHandlerRegistry()
-
-    registry.register(MoveCommand, RuntimeError, RetryOnceHandler())
-    registry.register(RetryOnceCommand, RuntimeError, RetryOnceFailedHandler())
-    registry.register(RetryTwiceCommand, RuntimeError, RetryTwiceFailedHandler())
-
-    queue.push(FailingMoveCommand("obj"))
-
-    processor = CommandProcessor(queue, registry)
-
-    processor.process()
-
-    assert queue.empty()
+    processor.process() 
+    
+    assert queue.empty() is True

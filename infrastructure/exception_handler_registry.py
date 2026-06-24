@@ -7,10 +7,17 @@ class ExceptionHandlerRegistry:
         self._handlers[(cmd_type, exc_type)] = handler
 
     def get_handler(self, cmd, exc):
+        # Использование type() гарантирует точное совпадение стратегии
+        cmd_type = type(cmd)
+        exc_type = type(exc)
+        
+        return self._handlers.get((cmd_type, exc_type), None)
 
-        for (cmd_type, exc_type), handler in self._handlers.items():
+    # def get_handler(self, cmd, exc):
 
-            if isinstance(cmd, cmd_type) and isinstance(exc, exc_type):
-                return handler
+    #     for (cmd_type, exc_type), handler in self._handlers.items():
 
-        return None
+    #         if isinstance(cmd, cmd_type) and isinstance(exc, exc_type):
+    #             return handler
+
+    #     return None
