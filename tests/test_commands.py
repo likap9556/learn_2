@@ -15,10 +15,6 @@ from handlers.retry_twice_failed_handler import RetryTwiceFailedHandler
 from commands.move_command import MoveCommand
 
 
-class FailingMoveCommand(MoveCommand):
-
-    def execute(self):
-        raise RuntimeError("boom")
 
 def test_execution_order():
 
